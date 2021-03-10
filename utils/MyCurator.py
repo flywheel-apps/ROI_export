@@ -99,7 +99,7 @@ class ROICurator(curator.HierarchyCurator):
         file_id = namespace.get("seriesInstanceUid")
         if file_id is None:
             log.error("No seriesInstanceUid for ROI")
-            return None
+            return [None]*7
 
         acquisitions = session.acquisitions()
         files = []
@@ -110,7 +110,7 @@ class ROICurator(curator.HierarchyCurator):
 
         if len(my_file) == 0:
             log.warning("No files match series instance UID")
-            return None
+            return [None]*7
 
         elif len(my_file) > 1:
             log.warning("Multiple matches for series uid")
@@ -332,7 +332,11 @@ class ROICurator(curator.HierarchyCurator):
                                     y_end,
                                     user_origin,
                                 ) = self.process_generic_roi(roi)
-
+                                
+                                if group_label is None:
+                                    log.info('Unable to find matching file for ROI')
+                                    continue
+                                    
                                 output_dict["Group"].append(group_label)
                                 output_dict["Project"].append(project_label)
                                 output_dict["Subject"].append(subject_label)

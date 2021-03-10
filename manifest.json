@@ -7,7 +7,7 @@
   "license": "MIT",
   "source": "https://github.com/flywheel-apps/EP_MetadataImport",
   "url": "https://github.com/flywheel-apps/EP_MetadataImport",
-  "version": "1.0.0b",
+  "version": "1.0.0e",
   "custom": {
     "gear-builder": {
       "category": "analysis",
