@@ -7,30 +7,24 @@
   "license": "MIT",
   "source": "https://github.com/flywheel-apps/EP_MetadataImport",
   "url": "https://github.com/flywheel-apps/EP_MetadataImport",
-  "version": "1.0.0a",
+  "version": "1.0.0b",
   "custom": {
     "gear-builder": {
       "category": "analysis",
-      "image": "flywheel/export_ROI:1.0.0"   
+      "image": "flywheel/export_roi:1.0.0"   
+    },
+    "flywheel": {
+      "suite": "Metadata I/O"
     }
   },
-  
   "inputs": {
-    "csv_file": {
-      "base": "file",
-      "optional": false
-    },    
+
     "key": {
       "base": "api-key"
     }
   },
   
   "config": {
-    "Subject IDs": {
-      "description": "A list of subject ID's to export, separated by commas.  Will export all ROIS from all Subjects if absent",
-      "type": "string",
-      "default": ""
-    },
     "gear_log_level": {
       "description": "The level at which the gear will log.",
       "type": "string",

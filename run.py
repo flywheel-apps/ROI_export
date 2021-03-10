@@ -1,5 +1,4 @@
 from pathlib import Path
-import pathvalidate as pv
 import sys
 from datetime import datetime
 
@@ -30,24 +29,16 @@ def main(context):
     dry_run = config.get('dry-run', False)
     log.debug(f"dry_run is {dry_run}")
     
-
-    ids = config.get("Subject IDs", None)
-    if ids:
-        log.debug(f"Getting ROI's from subjects {ids}")
-        ids = ids.split(',')
-    
-    
     try:
     
         destination_id = context.destination.get('id')
         dest_container = fw.get(destination_id)
         project = fw.get_project(dest_container.parents.project)
 
-        od = ar.acquire_rois(fw, project)
+        output_dict = ar.acquire_rois(fw, project)
         
-        output_path = Path(context.output_dir)/f"{project.label}_ROIs_{datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}"
-        report_output = context.output_dir
-        id.save_df_to_csv(od, report_output)
+        output_path = Path(context.output_dir)/f"{project.label}_ROIs_{datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}.csv"
+        ar.save_csv(output_dict, output_path)
     
     except Exception as e:
         log.exception(e)
