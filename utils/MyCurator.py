@@ -1,3 +1,4 @@
+import copy
 import logging
 from pathlib import Path
 import json
@@ -16,6 +17,29 @@ KNOWN_EXTENSIONS = {
     ".nii.gz": "NIFTI",
     ".nii": "NIFTI",
 }
+
+OUTPUT_TEMPLATE = {
+    "Group": [],
+    "Project": [],
+    "Subject": [],
+    "Session": [],
+    "Acquisition": [],
+    "File Name": [],
+    "File Type": [],
+    "Label": [],
+    "Description": [],
+    "Xmin": [],
+    "Xmax": [],
+    "Ymin": [],
+    "Ymax": [],
+    "User": [],
+    "ROI type": [],
+}
+
+
+
+
+
 
 log = logging.getLogger("export-ROI")
 
@@ -168,6 +192,7 @@ class ROICurator(curator.HierarchyCurator):
                     x_end,
                     y_end,
                     user_origin,
+                    cached_stats
                 ) = self.process_generic_roi(roi)
                 
                 
@@ -218,6 +243,7 @@ class ROICurator(curator.HierarchyCurator):
                         x_end,
                         y_end,
                         user_origin,
+                        cached_stats
                     ) = self.process_generic_roi(roi)
 
                     output_dict["Group"].append(group_label)
@@ -261,6 +287,8 @@ class ROICurator(curator.HierarchyCurator):
         user_origin = roi.get("updatedById")
         if user_origin is None:
             user_origin = roi.get("flywheelOrigin", {}).get("id")
+            
+        cached_stats = handles.get('cachedStats', {})    
 
         return (
             description,
@@ -271,30 +299,15 @@ class ROICurator(curator.HierarchyCurator):
             x_end,
             y_end,
             user_origin,
+            cached_stats
         )
 
     def curate_session(self, session: flywheel.Session):
 
         log.info(f"curating session {session.label}")
 
-        output_dict = {
-            "Group": [],
-            "Project": [],
-            "Subject": [],
-            "Session": [],
-            "Acquisition": [],
-            "File Name": [],
-            "File Type": [],
-            "Label": [],
-            "Description": [],
-            "Xmin": [],
-            "Xmax": [],
-            "Ymin": [],
-            "Ymax": [],
-            "User": [],
-            "ROI Type": [],
-        }
-        session=session.reload()
+        output_dict = copy.deepcopy(OUTPUT_TEMPLATE)
+        session = session.reload()
         session_info = session.info
 
         for pk in POSSIBLE_KEYS:
@@ -331,6 +344,7 @@ class ROICurator(curator.HierarchyCurator):
                                     x_end,
                                     y_end,
                                     user_origin,
+                                    cached_stats,
                                 ) = self.process_generic_roi(roi)
                                 
                                 if group_label is None:
