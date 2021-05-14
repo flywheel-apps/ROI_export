@@ -25,15 +25,15 @@ OUTPUT_TEMPLATE = {
     "Subject": [],
     "Session": [],
     "Acquisition": [],
-    "File Name": [],
+    "File": [],
     "File Type": [],
-    "Label": [],
-    "Description": [],
-    "Xmin": [],
-    "Xmax": [],
-    "Ymin": [],
-    "Ymax": [],
-    "User": [],
+    "location": [],
+    "description": [],
+    "X min": [],
+    "X max": [],
+    "Y min": [],
+    "Y max": [],
+    "User Origin": [],
     "ROI type": [],
     "area": [],
     "count": [],
@@ -45,10 +45,6 @@ OUTPUT_TEMPLATE = {
 }
 
 
-
-
-
-
 log = logging.getLogger("export-ROI")
 
 
@@ -58,7 +54,7 @@ class ROICurator(curator.HierarchyCurator):
         self.fw = fw
 
     def curate_container(self, container: Container):
-        """Curates a generic container.
+        """Curates a generic container and returns a python dictionary
 
         Args:
             container (Container): A Flywheel container.
@@ -90,31 +86,63 @@ class ROICurator(curator.HierarchyCurator):
 
         return output_dict
 
-    def get_file_hierarchy(self, container):
+    def get_file_hierarchy(self, file):
+        """ Returns the hierarchy path for a given file on flywheel
+        
+        Args:
+            container (flywheel.models.FileReference): The flywheel container that 
+            is the direct parent of the file
 
-        group_label = container.parent.parents.group
+        Returns:
+            group_label (str): the label of the file's parent group
+            project_label (str): the label of the file's parent project
+            subject_label (str): the label of the file's parent subject
+            session_label (str): the label of the file's parent session
+            acquisition_label (str): the label of the file's parent acquisition
 
-        project_id = container.parent.parents.project
+        """
+        
+        # The highest level a file can be on is a project,  so it will ALWAYS have a 
+        # parent group and project:
+        group_label = file.parent.parents.group
+        project_id = file.parent.parents.project
+        if project_id:
+            subject_label = self.fw.get_subject(project_id).label
+        else:
+            if file.parent.container_type == "subject":
+                subject_label = file.parent.label
+            else:
+                subject_label = None
+        
         project_label = self.fw.get_project(project_id).label
-
-        subject_id = container.parent.parents.subject
+        
+        # Check if the file has a parent subject and extract label if so
+        subject_id = file.parent.parents.subject
         if subject_id:
             subject_label = self.fw.get_subject(subject_id).label
         else:
-            subject_label = None
-
-        session_id = container.parent.parents.session
+            if file.parent.container_type == "subject":
+                subject_label = file.parent.label
+            else:
+                subject_label = None
+        
+        # Check if file has a parent session and extract label of so
+        session_id = file.parent.parents.session
         if session_id:
             session_label = self.fw.get_session(session_id).label
         else:
-            session_label = None
-
-        acquisition_id = container.parent.parents.acquisition
+            if file.parent.container_type == "session":
+                session_label = file.parent.label
+            else:
+                session_label = None
+        
+        # Check if the file has a parent acquisition and extract label
+        acquisition_id = file.parent.parents.acquisition
         if acquisition_id:
             acquisition_label = self.fw.get_acquisition(acquisition_id).label
         else:
-            if container.parent.container_type == "acquisition":
-                acquisition_label = container.parent.label
+            if file.parent.container_type == "acquisition":
+                acquisition_label = file.parent.label
             else:
                 acquisition_label = None
 
@@ -210,23 +238,23 @@ class ROICurator(curator.HierarchyCurator):
                     user_origin,
                     cached_stats
                 ) = self.process_generic_roi(roi)
-                
-                
+
                 output_dict["Group"].append(group_label)
                 output_dict["Project"].append(project_label)
                 output_dict["Subject"].append(subject_label)
                 output_dict["Session"].append(session_label)
                 output_dict["Acquisition"].append(acquisition_label)
-                output_dict["File Name"].append(file_name)
+
+                output_dict["File"].append(file_name)
                 output_dict["File Type"].append(file_type)
-                
-                output_dict["Label"].append(label)
-                output_dict["Description"].append(description)
-                
-                output_dict["Xmin"].append(x_start)
-                output_dict["Xmax"].append(x_end)
-                output_dict["Ymin"].append(y_start)
-                output_dict["Ymax"].append(y_end)
+
+                output_dict["location"].append(label)
+                output_dict["description"].append(description)
+
+                output_dict["X min"].append(x_start)
+                output_dict["X max"].append(x_end)
+                output_dict["Y min"].append(y_start)
+                output_dict["Y max"].append(y_end)
 
                 output_dict["area"].append(cached_stats.get('area', 0))
                 output_dict["count"].append(cached_stats.get('count', 0))
@@ -235,8 +263,9 @@ class ROICurator(curator.HierarchyCurator):
                 output_dict["min"].append(cached_stats.get('min', 0))
                 output_dict["stdDev"].append(cached_stats.get('stdDev', 0))
                 output_dict["variance"].append(cached_stats.get('variance', 0))
-                
-                output_dict["User"].append(user_origin)
+
+                output_dict["User Origin"].append(user_origin)
+
                 output_dict["ROI type"].append(roi_type)
 
         return output_dict
@@ -287,16 +316,16 @@ class ROICurator(curator.HierarchyCurator):
                     output_dict["Session"].append(session_label)
                     output_dict["Acquisition"].append(acquisition_label)
                     
-                    output_dict["File Name"].append(file_name)
+                    output_dict["File"].append(file_name)
                     output_dict["File Type"].append(file_type)
                     
-                    output_dict["Label"].append(label)
-                    output_dict["Description"].append(description)
+                    output_dict["location"].append(label)
+                    output_dict["description"].append(description)
                     
-                    output_dict["Xmin"].append(x_start)
-                    output_dict["Xmax"].append(x_end)
-                    output_dict["Ymin"].append(y_start)
-                    output_dict["Ymax"].append(y_end)
+                    output_dict["X min"].append(x_start)
+                    output_dict["X max"].append(x_end)
+                    output_dict["Y min"].append(y_start)
+                    output_dict["Y max"].append(y_end)
                     
                     output_dict["area"].append(cached_stats.get('area', 0))
                     output_dict["count"].append(cached_stats.get('count', 0))
@@ -305,9 +334,9 @@ class ROICurator(curator.HierarchyCurator):
                     output_dict["min"].append(cached_stats.get('min', 0))
                     output_dict["stdDev"].append(cached_stats.get('stdDev', 0))
                     output_dict["variance"].append(cached_stats.get('variance', 0))
-                    
-                    output_dict["User"].append(user_origin)
-                    
+
+                    output_dict["User Origin"].append(user_origin)
+
                     output_dict["ROI type"].append(roi_type)
 
         return output_dict
@@ -406,7 +435,7 @@ class ROICurator(curator.HierarchyCurator):
                     if parent_ses is None:
                         log.info('file is not at acquisition level, skipping')
                         continue
-                    session = fw.get_session(parent_ses)
+                    session = self.fw.get_session(parent_ses)
                     output_dict = self.process_namespace_ohifViewer(session, namespace, output_dict)
 
                     # for d in temp_dict:

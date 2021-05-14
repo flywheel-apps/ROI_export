@@ -51,4 +51,4 @@ def acquire_rois(fw, project):
 
 def save_csv(output_dict, path):
     df = pd.DataFrame.from_dict(output_dict)
-    df.to_csv(path)
+    df.to_csv(path, index=False)
