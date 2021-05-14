@@ -4,6 +4,9 @@ from pathlib import Path
 from pprint import pprint
 import json
 
+import pydicom
+from pydicom.filebase import DicomBytesIO
+
 import flywheel
 
 from flywheel_gear_toolkit.utils import curator
@@ -26,6 +29,7 @@ OUTPUT_TEMPLATE = {
     "Session": [],
     "Acquisition": [],
     "File": [],
+    "Dicom Member": [],
     "File Type": [],
     "location": [],
     "description": [],
@@ -213,6 +217,14 @@ class ROICurator(curator.HierarchyCurator):
             print(roi)
             roi_type = roi.get("toolType")
             if roi_type == "rectangleRoi" or roi_type == "ellipticalRoi":
+                
+                study_uid = roi.get("studyInstanceUid")
+                series_uid = roi.get("seriesInstanceUid")
+                sop_uid = roi.get("sopInstanceUid")
+
+                dicom_member = self.get_roi_dicom_file(file, study_uid, series_uid,
+                                                       sop_uid)
+                
                 (
                     group_label,
                     project_label,
@@ -246,6 +258,7 @@ class ROICurator(curator.HierarchyCurator):
                 output_dict["Acquisition"].append(acquisition_label)
 
                 output_dict["File"].append(file_name)
+                output_dict["Dicom Member"].append(dicom_member)
                 output_dict["File Type"].append(file_type)
 
                 output_dict["location"].append(label)
@@ -284,6 +297,13 @@ class ROICurator(curator.HierarchyCurator):
                 roi_type_namespace = roi_namespace.get(roi_type, {})
 
                 for roi in roi_type_namespace:
+                    
+                    study_uid = roi.get("studyInstanceUid")
+                    series_uid = roi.get("seriesInstanceUid")
+                    sop_uid = roi.get("sopInstanceUid")
+                    
+                    dicom_member = self.get_roi_dicom_file(session, study_uid, series_uid, sop_uid)
+                    
                     (
                         group_label,
                         project_label,
@@ -317,6 +337,7 @@ class ROICurator(curator.HierarchyCurator):
                     output_dict["Acquisition"].append(acquisition_label)
                     
                     output_dict["File"].append(file_name)
+                    output_dict["Dicom Member"].append(dicom_member)
                     output_dict["File Type"].append(file_type)
                     
                     output_dict["location"].append(label)
@@ -367,7 +388,8 @@ class ROICurator(curator.HierarchyCurator):
             
         cached_stats = roi.get('cachedStats', {})
         log.debug(pprint(cached_stats, indent=2))
-
+        
+                
         return (
             description,
             label,
@@ -414,7 +436,6 @@ class ROICurator(curator.HierarchyCurator):
 
                 log.info("FOUND")
 
-
                 if pk == "roi":
                     namespace = file.info.get(pk, {})
                     output_dict = self.process_namespace_roi(
@@ -447,4 +468,78 @@ class ROICurator(curator.HierarchyCurator):
         return output_dict
 
 
+    def get_roi_dicom_file(self, fw_object, study_uid, series_uid, sop_uid):
+        """ locates the specific dicom file associated with a given ROI.
+        
+        Given an ROI's study UID, series UID, and SOP uid, locate the exact dicom file
+        that the roi corresponds to.  
+        
+        Args:
+            fw_object (flywheel object): flywheel file or a parent container of a file
+            study_uid (str): the study UID on the ROI
+            series_uid (str): the series UID on the ROI
+            sop_uid (str):  the SOP uid on the ROI
 
+        Returns:
+            dicom_file (str) the name of the dicom file that the ROI is on. 
+
+        """
+        
+        container_type = fw_object.container_type
+        if container_type == "file":
+            acq = fw_object.parent
+            files = [fw_object]
+            object_name = fw_object.name
+            
+        elif container_type == "acquisition":
+            files = fw_object.reload().files
+            object_name = fw_object.label
+    
+        elif container_type == "session":
+            # first extract all files from the session.
+            files = []
+            for acq in fw_object.acquisitions():
+                acq = acq.reload()
+                files.extend(acq.files)
+            object_name = fw_object.label
+        
+        # Filter by file type, study UID and series UID:
+        files = [f for f in files if f.type == "dicom" and f.info.get("StudyInstanceUID") == study_uid and f.info.get("SeriesInstanceUID") == series_uid]
+        if len(files) == 0:
+            log.warning(f"No dicom files found in session {object_name} with matching study/series UID "
+                        f" Dicom Classifier must be run before ROI export.")
+            return "NO MATCHES FOUND"
+        
+        # If we found more than one dicom matching study/series, something is probably wrong...duplicate upload?
+        if len(files) > 1:
+            log.warning(f"more than 1 file found mathing:\nStudyUID: {study_uid}\nSeriesUID: {series_uid}")
+        
+        file = files[0]
+        acq = file.parent
+
+        # This reads the raw dicom data stream into a pydicom object
+        #     (https://github.com/pydicom/pydicom/issues/653#issuecomment-449648844)
+        zip_info = acq.get_file_zip_info(file['name'])
+        
+        # First pass - we will look for a simple string match in the zipped dicom:
+        match = [p['path'] for p in zip_info['members'] if sop_uid in p['path']]
+        
+        if match:
+            dicom_file = match[0]
+            return dicom_file
+        
+        # otherwise we have to pull each dicom, read the header, and compare SOP id's.  
+        # Do this one zip member by one in the chance that you will find the correct
+        # file early on and you don't have to download everything:
+        for zip_member in zip_info["members"]:
+            raw_dcm = DicomBytesIO(
+            acq.read_file_zip_member(file['name'], zip_member.path))
+            dcm = pydicom.dcmread(raw_dcm)
+            
+            if dcm.SOPInstanceUID == sop_uid:
+                match = zip_member.path
+                return match
+        
+        log.warning(f"found matching Study and Series UID but no matching SOP uid:\nSTUDY:{study_uid}\tSERIES:{series_uid}\nSOP:{sop_uid}")
+        
+        return "NO SOP MATCH"
