@@ -386,7 +386,7 @@ class ROICurator(curator.HierarchyCurator):
             user_origin = roi.get("flywheelOrigin", {}).get("id")
             
         cached_stats = roi.get('cachedStats', {})
-        log.debug(f"Cached stats:{pprint(cached_stats, indent=2)}")
+        log.debug(f"Cached stats:{cached_stats}")
         
                 
         return (
