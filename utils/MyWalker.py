@@ -24,7 +24,7 @@ class MyWalker(walker.Walker):
             return
 
         element = element.reload()
-        log.info(
+        log.debug(
             f"Queueing children for {container_type} {element.label or element.code}"
         )
 

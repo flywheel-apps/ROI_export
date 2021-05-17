@@ -111,12 +111,12 @@ class ROICurator(curator.HierarchyCurator):
         group_label = file.parent.parents.group
         project_id = file.parent.parents.project
         if project_id:
-            subject_label = self.fw.get_subject(project_id).label
+            project_label = self.fw.get_project(project_id).label
         else:
-            if file.parent.container_type == "subject":
-                subject_label = file.parent.label
+            if file.parent.container_type == "project":
+                project_label = file.parent.label
             else:
-                subject_label = None
+                project_label = None
         
         project_label = self.fw.get_project(project_id).label
         
@@ -214,7 +214,6 @@ class ROICurator(curator.HierarchyCurator):
     ):
 
         for roi in roi_namespace:
-            print(roi)
             roi_type = roi.get("toolType")
             if roi_type == "rectangleRoi" or roi_type == "ellipticalRoi":
                 
@@ -387,7 +386,7 @@ class ROICurator(curator.HierarchyCurator):
             user_origin = roi.get("flywheelOrigin", {}).get("id")
             
         cached_stats = roi.get('cachedStats', {})
-        log.debug(pprint(cached_stats, indent=2))
+        log.debug(f"Cached stats:{pprint(cached_stats, indent=2)}")
         
                 
         return (
@@ -411,18 +410,15 @@ class ROICurator(curator.HierarchyCurator):
         session_info = session.info
 
         for pk in POSSIBLE_KEYS:
-            log.info(f"checking {pk} in {session_info.keys()}")
+            log.debug(f"checking {pk} in {session_info.keys()}")
             if pk in session_info:
-                log.info("Found")
+                log.debug("Found")
                 if pk == "ohifViewer":
-                    log.info('OHIFVIWER')
+                    log.debug('OHIFVIWER')
                     namespace = session_info.get(pk, {}).get("measurements", {})
 
                     output_dict = self.process_namespace_ohifViewer(session, namespace, output_dict)
    
-                    
-                              
-                            
         return output_dict
 
     def curate_file(self, file: flywheel.FileEntry):
@@ -434,7 +430,7 @@ class ROICurator(curator.HierarchyCurator):
             log.debug(f"checking {pk} in {file.info.keys()}")
             if pk in file.info:
 
-                log.info("FOUND")
+                log.debug("FOUND")
 
                 if pk == "roi":
                     namespace = file.info.get(pk, {})
@@ -454,7 +450,7 @@ class ROICurator(curator.HierarchyCurator):
                     namespace = file.info.get(pk, {}).get("measurements", {})
                     parent_ses = file.parent.parents.session
                     if parent_ses is None:
-                        log.info('file is not at acquisition level, skipping')
+                        log.debug('file is not at acquisition level, skipping')
                         continue
                     session = self.fw.get_session(parent_ses)
                     output_dict = self.process_namespace_ohifViewer(session, namespace, output_dict)

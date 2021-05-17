@@ -1,12 +1,14 @@
 from pathlib import Path
 import sys
 from datetime import datetime
+import logging
 
 import flywheel
 import flywheel_gear_toolkit as gt
 
 from utils import acquire_ROIs as ar, import_data as id
 
+log = logging.getLogger(__name__)
 
 def main(context):
     
@@ -24,7 +26,7 @@ def main(context):
     else:
         context.init_logging("debug")
     context.log_config()
-    log = context.log
+    
     
     dry_run = config.get('dry-run', False)
     log.debug(f"dry_run is {dry_run}")
