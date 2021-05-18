@@ -6,7 +6,7 @@ import logging
 import flywheel
 import flywheel_gear_toolkit as gt
 
-from utils import acquire_ROIs as ar, import_data as id
+from utils import acquire_ROIs as ar
 
 log = logging.getLogger(__name__)
 
