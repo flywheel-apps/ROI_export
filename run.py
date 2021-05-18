@@ -39,7 +39,7 @@ def main(context):
 
         output_dict = ar.acquire_rois(fw, project)
         
-        output_path = Path(context.output_dir)/f"{project.label}_ROIs_{datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}.csv"
+        output_path = Path(context.output_dir)/f"{project.label}_ROI-Export_{datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}.csv"
         ar.save_csv(output_dict, output_path)
     
     except Exception as e:
