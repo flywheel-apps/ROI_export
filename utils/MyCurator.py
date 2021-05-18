@@ -13,6 +13,7 @@ from flywheel_gear_toolkit.utils import curator
 from flywheel_gear_toolkit.utils.datatypes import Container
 
 POSSIBLE_KEYS = ["ohifViewer", "roi"]
+OHIF_KEY = "ohifViewer"
 SUPPORTED_ROIS = ["RectangleRoi", "EllipticalRoi"]
 EXPORT_VALUES = [""]
 KNOWN_EXTENSIONS = {
@@ -59,10 +60,19 @@ class ROICurator(curator.HierarchyCurator):
 
     def curate_container(self, container: Container):
         """Curates a generic container and returns a python dictionary
+        
+        The returned python dictionary contains any OhifViewer ROI metadata objects.
+        The returned dictionary is organized as follows:
+        
+        output_dict = {"ROI TYPE": [<list of ROIs of that type>]}
 
         Args:
             container (Container): A Flywheel container.
+            
+        Returns:
+            output_dict (dict):  A dictionary of ROI types found on the container
         """
+        
         if hasattr(container, "container_type"):
             container_type = container.container_type
             if container_type == "project":
@@ -90,8 +100,12 @@ class ROICurator(curator.HierarchyCurator):
 
         return output_dict
 
+
     def get_file_hierarchy(self, file):
         """ Returns the hierarchy path for a given file on flywheel
+        
+        This is used to provide a human-readable path to the file that an ROI is found
+        on.  These values are later saved in an output.csv file.
         
         Args:
             container (flywheel.models.FileReference): The flywheel container that 
@@ -118,7 +132,6 @@ class ROICurator(curator.HierarchyCurator):
             else:
                 project_label = None
         
-        project_label = self.fw.get_project(project_id).label
         
         # Check if the file has a parent subject and extract label if so
         subject_id = file.parent.parents.subject
@@ -158,19 +171,45 @@ class ROICurator(curator.HierarchyCurator):
             acquisition_label,
         )
 
-    def get_session_hierarchy(self, session, namespace):
 
-        file_id = namespace.get("seriesInstanceUid")
+    def get_roi_hierarchy(self, session, roi):
+        """ Returns the hierarchy paths for each file that has an ROI within a given
+        session on flywheel
+
+        This is used to provide a human-readable path to the session that an ROI is found
+        on.  These values are later saved in an output.csv file.
+
+        Args:
+            session (flywheel.Session): The flywheel session that has ROI metadata.
+            roi (dict): the specific ROI that we are generating a hierarchy for
+
+        Returns:
+            group_label (str): the label of the file's parent group
+            project_label (str): the label of the file's parent project
+            subject_label (str): the label of the file's parent subject
+            session_label (str): the label of the file's parent session
+            acquisition_label (str): the label of the file's parent acquisition
+            file_name (str): The name of the file that the 
+            file_type,
+
+        """
+        
+        # If this ROI doesn't have this key, we have no way of linking it to a file
+        # when operating at the session level.
+        file_id = roi.get("seriesInstanceUid")
         if file_id is None:
             log.error("No seriesInstanceUid for ROI")
             return [None]*7
-
+        
+        # Get all the files contained in all the acquisitions in this session
         acquisitions = session.acquisitions()
         files = []
         for a in acquisitions:
             files.extend(a.reload().files)
-
-        my_file = [f for f in files if f.info.get("SeriesInstanceUID","").replace('_','.') == file_id]
+        
+        # If they have metadata (THEY MUST), match the series instance uid to find the 
+        # fild that this ROI is reffereing to.
+        my_file = [f for f in files if f.info.get("SeriesInstanceUID", "").replace('_', '.') == file_id]
 
         if len(my_file) == 0:
             log.warning("No files match series instance UID")
@@ -184,7 +223,8 @@ class ROICurator(curator.HierarchyCurator):
         file_name = Path(my_file.name)
         suffix = "".join(file_name.suffixes[-2:])
         file_type = KNOWN_EXTENSIONS.get(suffix, suffix[1:])
-
+        
+        # Now actually work backwards from this file to build the full hierarchy
         (
             group_label,
             project_label,
@@ -203,24 +243,41 @@ class ROICurator(curator.HierarchyCurator):
             file_type,
         )
 
-    def update_output_dict(self, output_dict, **kwargs):
-        pass
 
     def process_namespace_roi(
         self,
         roi_namespace,
-        output_dict,
         file
     ):
+        """
+        Processes the OHIF viewer ROI's when they're saved under the namespace "roi"
+        
+        I'm not sure if this is an older version of the ROI's or something but 
+        sometimes i see them in this location so I made this to cover that case.
+        
+        Args:
+            roi_namespace (dict): the metadata object within the "roi" namespace
+            file (flywheel.FileEntry): the file that the metadata is attached to
 
+        Returns:
+            output_dict (dict): an output dictionary with the desired ROI info.
+
+        """
+
+        # Create a copy of the output template.  This will be populated here.
+        output_dict = copy.deepcopy(OUTPUT_TEMPLATE)
+        
         for roi in roi_namespace:
             roi_type = roi.get("toolType")
+            # Tool types aren't even formated the same as `SUPPORTED_ROIS` keys...
+            # I could add these to the list but again, idk.
             if roi_type == "rectangleRoi" or roi_type == "ellipticalRoi":
                 
                 study_uid = roi.get("studyInstanceUid")
                 series_uid = roi.get("seriesInstanceUid")
                 sop_uid = roi.get("sopInstanceUid")
-
+                
+               
                 dicom_member = self.get_roi_dicom_file(file, study_uid, series_uid,
                                                        sop_uid)
                 
@@ -282,26 +339,55 @@ class ROICurator(curator.HierarchyCurator):
 
         return output_dict
 
+
     def process_namespace_ohifViewer(
         self,
         session,
-        roi_namespace,
-        output_dict,
-
+        roi_namespace
     ):
+        
+        """
+        Process the metadata structure "ohifViewer" to extract ROI's from a session.
+        
+        The session is passed in for hierarchy information.  The roi_namespace is
+        metadata extracted from session.info. It's passed in as its own object... for
+        reasons?  It made sense to have the logic of finding that namespace and
+        extracting it in a different function in case the structure ever changes.
+        
+        Args:
+            session (flywheel.Session): The session that has the metadata ROI
+            roi_namespace (dict): The actual metadata ROI from the session pre-extracted
 
+        Returns:
+
+        """
+        
+        # Create a copy of the output template.  This will be populated here.
+        output_dict = copy.deepcopy(OUTPUT_TEMPLATE)
+        
+        # Loop through the different ROI types in the namespace
         for roi_type in roi_namespace.keys():
-
+    
+            # If it's a supported ROI type, we will process
             if roi_type in SUPPORTED_ROIS:
+                
+                # This structure is a list of all ROI's of that type.
                 roi_type_namespace = roi_namespace.get(roi_type, {})
-
+                
+                # Loop through that list and process each one.
                 for roi in roi_type_namespace:
                     
+                    # These three pieces link the ROI to the file/slice (vital)
                     study_uid = roi.get("studyInstanceUid")
                     series_uid = roi.get("seriesInstanceUid")
                     sop_uid = roi.get("sopInstanceUid")
                     
+                    # With these three, we will locate the exact dicom file that the 
+                    # session level ROI is referring to
                     dicom_member = self.get_roi_dicom_file(session, study_uid, series_uid, sop_uid)
+                    
+                    # This rebuilds the flywheel path (hierarchy) in human readable
+                    # labels for this particular ROI
                     
                     (
                         group_label,
@@ -311,8 +397,9 @@ class ROICurator(curator.HierarchyCurator):
                         acquisition_label,
                         file_name,
                         file_type,
-                    ) = self.get_session_hierarchy(session, roi)
+                    ) = self.get_roi_hierarchy(session, roi)
                     
+                    # Now extract all the information we need from this ROI.
                     (
                         description,
                         label,
@@ -325,10 +412,13 @@ class ROICurator(curator.HierarchyCurator):
                         cached_stats
                     ) = self.process_generic_roi(roi)
 
+                    # If we don't have a group label, we didn't find a matching file.
+                    # We must skip.
                     if group_label is None:
                         log.info('Unable to find matching file for ROI')
                         continue
-
+                    
+                    # populate the output_dictionary
                     output_dict["Group"].append(group_label)
                     output_dict["Project"].append(project_label)
                     output_dict["Subject"].append(subject_label)
@@ -361,18 +451,43 @@ class ROICurator(curator.HierarchyCurator):
 
         return output_dict
 
+
     def process_generic_roi(self, roi):
+        """
+        Processes the generic structure of an OHIF viewer ROI, regardless of ROI type
+        
+        
+        Args:
+            roi (dict): an OHIF viewer ROI metadata object
+
+        Returns:
+            description (str): the description of the ROI
+            label (str): the Label of the ROI
+            timestamp (str): the timestamp that the ROI was created
+            x_start (float): the smallest x coordinate of the ROI
+            y_start (float): the smallest y coordinate of the ROI
+            x_end (float): the largest x coordinate of the ROI
+            y_end (float): the largest y coordinate of the ROI
+            user_origin (str): the flywheel ID of the user who created the ROI
+            cached_stats (dict): a dictionary of cached stats about the ROI
+
+        """
+        
+        # Simply exctract the values we need
         description = roi.get("description")
         label = roi.get("location")
         timestamp = roi.get("updatedAt")
-
+        
+        # Label can be two different things...It's weird, ok?
         if label is None:
             label = roi.get("label")
-
+        
+        # these are dictionaries that have information we need
         handles = roi.get("handles", {})
         start = handles.get("start", {})
         end = handles.get("end", {})
-
+        
+        # Not sure why I don't just take the start and end...
         exs = (start.get("x"), end.get("x"))
         whys = (start.get("y"), end.get("y"))
         x_start = min(exs)
@@ -380,15 +495,16 @@ class ROICurator(curator.HierarchyCurator):
 
         x_end = max(exs)
         y_end = max(whys)
-
+        
+        # Get the user
         user_origin = roi.get("updatedById")
         if user_origin is None:
             user_origin = roi.get("flywheelOrigin", {}).get("id")
-            
+        
+        # Retrieve the cahed stats (things like voxel value mean, min, max, std, etc)    
         cached_stats = roi.get('cachedStats', {})
         log.debug(f"Cached stats:{cached_stats}")
         
-                
         return (
             description,
             label,
@@ -401,42 +517,67 @@ class ROICurator(curator.HierarchyCurator):
             cached_stats
         )
 
+
     def curate_session(self, session: flywheel.Session):
+        """
+        Curates a flywheel session container object to extract ROI's.
+        
+        Args:
+            session (flywheel.Session): The flywheel Session to curate.
+
+        Returns:
+            output_dict (dict)
+        """
 
         log.info(f"curating session {session.label}")
-
-        output_dict = copy.deepcopy(OUTPUT_TEMPLATE)
+        
+        # Copy the output dict template.  Could alternatively be done with dict
+        # comprehension.  Each item in output_dict is a list.  Each list will have
+        # one entry for every ROI
         session = session.reload()
         session_info = session.info
-
-        for pk in POSSIBLE_KEYS:
-            log.debug(f"checking {pk} in {session_info.keys()}")
-            if pk in session_info:
-                log.debug("Found")
-                if pk == "ohifViewer":
-                    log.debug('OHIFVIWER')
-                    namespace = session_info.get(pk, {}).get("measurements", {})
-
-                    output_dict = self.process_namespace_ohifViewer(session, namespace, output_dict)
+        
+        # I've seen two keys used for this, "roi" and "ohifViewer".  'roi' was probably
+        # Just for testing since I rarely see it, but here we are.
+        for OHIF_KEY in session_info:
+            log.debug(f"checking {OHIF_KEY} in {session_info.keys()}")
+            # We're looking for the 'measurements' key.
+            measurements = session_info.get(OHIF_KEY, {}).get("measurements", {})
+            
+            # Process this metadata structure
+            output_dict = self.process_namespace_ohifViewer(session, measurements)
    
         return output_dict
 
+
     def curate_file(self, file: flywheel.FileEntry):
+        """
+        Curates a flywheel session container object to extract ROI's.
+        
+        Args:
+            file (flywheel.FileEntry): the file to curate
+
+        Returns:
+
+        """
+        
         log.info(f"curating file {file.name}")
 
         output_dict = copy.deepcopy(OUTPUT_TEMPLATE)
 
+        # Files can have either rois or ohifViewers... I think files are being phased
+        # out in general for having this ROI metadata in favor of always storing it at
+        # the session level but idk.
         for pk in POSSIBLE_KEYS:
             log.debug(f"checking {pk} in {file.info.keys()}")
             if pk in file.info:
 
                 log.debug("FOUND")
-
+                # If the namespace is "roi", the structure is slightly different
                 if pk == "roi":
                     namespace = file.info.get(pk, {})
                     output_dict = self.process_namespace_roi(
                         namespace,
-                        output_dict,
                         file
                     )
 
@@ -453,7 +594,7 @@ class ROICurator(curator.HierarchyCurator):
                         log.debug('file is not at acquisition level, skipping')
                         continue
                     session = self.fw.get_session(parent_ses)
-                    output_dict = self.process_namespace_ohifViewer(session, namespace, output_dict)
+                    output_dict = self.process_namespace_ohifViewer(session, namespace)
 
                     # for d in temp_dict:
                     #     if d in output_dict:
