@@ -7,11 +7,10 @@ RUN mkdir -p $FLYWHEEL
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
+
 COPY run.py $FLYWHEEL
 COPY manifest.json $FLYWHEEL
-COPY utils/load_data.py $FLYWHEEL
-COPY utils/import_data.py $FLYWHEEL
-COPY utils/flywheel_helpers.py $FLYWHEEL
-COPY utils/mapping_class.py $FLYWHEEL
+COPY utils $FLYWHEEL/utils
+
 
 
