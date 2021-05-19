@@ -7,7 +7,7 @@
   "license": "MIT",
   "source": "https://github.com/flywheel-apps/ROI_export",
   "url": "https://github.com/flywheel-apps/ROI_export",
-  "version": "1.0.2k",
+  "version": "1.0.2",
   "custom": {
     "gear-builder": {
       "category": "analysis",
