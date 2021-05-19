@@ -11,7 +11,7 @@
   "custom": {
     "gear-builder": {
       "category": "analysis",
-      "image": "flywheel/export_roi:1.0.0"   
+      "image": "flywheel/export_roi:1.0.2"   
     },
     "flywheel": {
       "suite": "Metadata I/O"
