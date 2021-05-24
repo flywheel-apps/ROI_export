@@ -539,6 +539,7 @@ class ROICurator(curator.HierarchyCurator):
         
         # I've seen two keys used for this, "roi" and "ohifViewer".  'roi' was probably
         # Just for testing since I rarely see it, but here we are.
+        output_dict = {}
         for OHIF_KEY in session_info:
             log.debug(f"checking {OHIF_KEY} in {session_info.keys()}")
             # We're looking for the 'measurements' key.
@@ -546,7 +547,7 @@ class ROICurator(curator.HierarchyCurator):
             
             # Process this metadata structure
             output_dict = self.process_namespace_ohifViewer(session, measurements)
-   
+            
         return output_dict
 
 

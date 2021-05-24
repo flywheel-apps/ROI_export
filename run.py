@@ -35,7 +35,8 @@ def main(context):
     
         destination_id = context.destination.get('id')
         dest_container = fw.get(destination_id)
-        project = fw.get_project(dest_container.parents.project)
+        project_id = dest_container.parents.project
+        project = fw.get_project(project_id)
 
         output_dict = ar.acquire_rois(fw, project)
         
