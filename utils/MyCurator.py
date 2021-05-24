@@ -207,6 +207,9 @@ class ROICurator(curator.HierarchyCurator):
         for a in acquisitions:
             files.extend(a.reload().files)
         
+        # Get dicoms only
+        files = [f for f in files if f.type == "dicom"]
+        
         # If they have metadata (THEY MUST), match the series instance uid to find the 
         # fild that this ROI is reffereing to.
         my_file = [f for f in files if f.info.get("SeriesInstanceUID", "").replace('_', '.') == file_id]
@@ -216,7 +219,7 @@ class ROICurator(curator.HierarchyCurator):
             return [None]*7
 
         elif len(my_file) > 1:
-            log.warning("Multiple matches for series uid")
+            log.warning(f"Multiple matches for series uid.  Skipping {file_id} ")
 
         my_file = my_file[0]
 
