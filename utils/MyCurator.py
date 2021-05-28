@@ -219,7 +219,7 @@ class ROICurator(curator.HierarchyCurator):
             return [None]*7
 
         elif len(my_file) > 1:
-            log.warning(f"Multiple matches for series uid.  Skipping {file_id} ")
+            log.warning(f"Multiple matches for series uid {file_id} ")
 
         my_file = my_file[0]
 
@@ -381,9 +381,9 @@ class ROICurator(curator.HierarchyCurator):
                 for roi in roi_type_namespace:
                     
                     # These three pieces link the ROI to the file/slice (vital)
-                    study_uid = roi.get("studyInstanceUid")
-                    series_uid = roi.get("seriesInstanceUid")
-                    sop_uid = roi.get("sopInstanceUid")
+                    study_uid = roi.get("studyInstanceUid", roi.get("StudyInstanceUID"))
+                    series_uid = roi.get("seriesInstanceUid", roi.get("SeriesInstanceUID"))
+                    sop_uid = roi.get("sopInstanceUid", roi.get("SOPInstanceUID"))
                     
                     # With these three, we will locate the exact dicom file that the 
                     # session level ROI is referring to
@@ -628,16 +628,19 @@ class ROICurator(curator.HierarchyCurator):
         
         container_type = fw_object.container_type
         if container_type == "file":
+            log.debug('working on file')
             acq = fw_object.parent
             files = [fw_object]
             object_name = fw_object.name
             
         elif container_type == "acquisition":
+            log.debug('working on acquisition')
             files = fw_object.reload().files
             object_name = fw_object.label
     
         elif container_type == "session":
             # first extract all files from the session.
+            log.debug('working on session')
             files = []
             for acq in fw_object.acquisitions():
                 acq = acq.reload()
