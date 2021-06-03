@@ -58,8 +58,8 @@ def acquire_rois(fw, project):
         # that container.  so if it exists and it's not None and it's not empty, it's
         # a real ROI and we should process it.
         if (container_dict and
-            container_dict.get("Group") is not None and
-            container_dict.get("Group") != []):
+            container_dict.get("group") is not None and
+            container_dict.get("group") != []):
             
             for d in container_dict:
                 if d in output_dict:

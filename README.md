@@ -21,25 +21,25 @@ information about the ROI itself:
 
 #### Flywheel location columns:
 
-- **Group** : The group label that the ROI is in
-- **Project** : The project label that the ROI is in
-- **Subject** : The subject label that the ROI is in
-- **Session** : The session label that the ROI is in
-- **Acquisition** : The acquisition label that the ROI is in
-- **File** : The file name that the ROI is located on
-- **Dicom Member** : The location of the file within the dicom zip archive that the ROI
+- **group** : The group label that the ROI is in
+- **project** : The project label that the ROI is in
+- **subject** : The subject label that the ROI is in
+- **session** : The session label that the ROI is in
+- **acquisition** : The acquisition label that the ROI is in
+- **file** : The file name that the ROI is located on
+- **dicom member** : The location of the file within the dicom zip archive that the ROI
 is on
-- **File Type** : The type of file that the ROI is on 
+- **file type** : The type of file that the ROI is on 
 
 #### ROI Information Columns:
 - **location** : The "location" given to the ROI (usually a body part/region)
 - **description** : A description given to the ROI
-- **X min** : The minimum x coordinate of the ROI
-- **X max** : The maximum x coordinate of the ROI
-- **Y min** : The minimum y coordinate of the ROI
-- **Y max** : The maximum y coordinate of the ROI
-- **User Origin** : The flywheel user who created the ROI
-- **ROI type** : The ROI type
+- **x min** : The minimum x coordinate of the ROI
+- **x max** : The maximum x coordinate of the ROI
+- **y min** : The minimum y coordinate of the ROI
+- **y max** : The maximum y coordinate of the ROI
+- **user origin** : The flywheel user who created the ROI
+- **roi type** : The ROI type
 - **area** : The area contained in the ROI (mm or vox squared)
 - **count** : The number of voxels in the ROI
 - **max** : The max voxel value in the ROI
