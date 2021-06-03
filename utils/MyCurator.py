@@ -543,7 +543,7 @@ class ROICurator(curator.HierarchyCurator):
         # I've seen two keys used for this, "roi" and "ohifViewer".  'roi' was probably
         # Just for testing since I rarely see it, but here we are.
         output_dict = {}
-        for OHIF_KEY in session_info:
+        if OHIF_KEY in session_info:
             log.debug(f"checking {OHIF_KEY} in {session_info.keys()}")
             # We're looking for the 'measurements' key.
             measurements = session_info.get(OHIF_KEY, {}).get("measurements", {})
