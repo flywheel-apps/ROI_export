@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 import json
 import pandas as pd
+import copy
 
 
 import flywheel
@@ -22,7 +23,7 @@ KNOWN_EXTENSIONS = {
     ".nii": "NIFTI",
 }
 
-
+log = logging.getLogger(__name__)
 
 def acquire_rois(fw, project):
     """
@@ -52,14 +53,16 @@ def acquire_rois(fw, project):
 
     for container in project_walker.walk():
         container_dict = curator.curate_container(container)
-        
+        container_dict = copy.deepcopy(container_dict)
         # Every container from this curator will return a dict, but if the keys are
         # empty, that means it didn't find any metadata matching OhifViewer Roi's on
         # that container.  so if it exists and it's not None and it's not empty, it's
         # a real ROI and we should process it.
+        log.debug("Container Dict:")
+        log.debug(container_dict)
         if (container_dict and
-            container_dict.get("Group") is not None and
-            container_dict.get("Group") != []):
+            container_dict.get("group") is not None and
+            container_dict.get("group") != []):
             
             for d in container_dict:
                 if d in output_dict:

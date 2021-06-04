@@ -24,22 +24,22 @@ KNOWN_EXTENSIONS = {
 }
 
 OUTPUT_TEMPLATE = {
-    "Group": [],
-    "Project": [],
-    "Subject": [],
-    "Session": [],
-    "Acquisition": [],
-    "File": [],
-    "Dicom Member": [],
-    "File Type": [],
+    "group": [],
+    "project": [],
+    "subject": [],
+    "session": [],
+    "acquisition": [],
+    "file": [],
+    "dicom member": [],
+    "file type": [],
     "location": [],
     "description": [],
-    "X min": [],
-    "X max": [],
-    "Y min": [],
-    "Y max": [],
-    "User Origin": [],
-    "ROI type": [],
+    "x min": [],
+    "x max": [],
+    "y min": [],
+    "y max": [],
+    "user origin": [],
+    "roi type": [],
     "area": [],
     "count": [],
     "max": [],
@@ -219,7 +219,7 @@ class ROICurator(curator.HierarchyCurator):
             return [None]*7
 
         elif len(my_file) > 1:
-            log.warning(f"Multiple matches for series uid.  Skipping {file_id} ")
+            log.warning(f"Multiple matches for series uid {file_id} ")
 
         my_file = my_file[0]
 
@@ -310,23 +310,23 @@ class ROICurator(curator.HierarchyCurator):
                     cached_stats
                 ) = self.process_generic_roi(roi)
 
-                output_dict["Group"].append(group_label)
-                output_dict["Project"].append(project_label)
-                output_dict["Subject"].append(subject_label)
-                output_dict["Session"].append(session_label)
-                output_dict["Acquisition"].append(acquisition_label)
+                output_dict["group"].append(group_label)
+                output_dict["project"].append(project_label)
+                output_dict["subject"].append(subject_label)
+                output_dict["session"].append(session_label)
+                output_dict["scquisition"].append(acquisition_label)
 
-                output_dict["File"].append(file_name)
-                output_dict["Dicom Member"].append(dicom_member)
-                output_dict["File Type"].append(file_type)
+                output_dict["file"].append(file_name)
+                output_dict["dicom member"].append(dicom_member)
+                output_dict["file type"].append(file_type)
 
                 output_dict["location"].append(label)
                 output_dict["description"].append(description)
 
-                output_dict["X min"].append(x_start)
-                output_dict["X max"].append(x_end)
-                output_dict["Y min"].append(y_start)
-                output_dict["Y max"].append(y_end)
+                output_dict["x min"].append(x_start)
+                output_dict["x max"].append(x_end)
+                output_dict["y min"].append(y_start)
+                output_dict["y max"].append(y_end)
 
                 output_dict["area"].append(cached_stats.get('area', 0))
                 output_dict["count"].append(cached_stats.get('count', 0))
@@ -336,9 +336,9 @@ class ROICurator(curator.HierarchyCurator):
                 output_dict["stdDev"].append(cached_stats.get('stdDev', 0))
                 output_dict["variance"].append(cached_stats.get('variance', 0))
 
-                output_dict["User Origin"].append(user_origin)
+                output_dict["user origin"].append(user_origin)
 
-                output_dict["ROI type"].append(roi_type)
+                output_dict["roi type"].append(roi_type)
 
         return output_dict
 
@@ -381,9 +381,9 @@ class ROICurator(curator.HierarchyCurator):
                 for roi in roi_type_namespace:
                     
                     # These three pieces link the ROI to the file/slice (vital)
-                    study_uid = roi.get("studyInstanceUid")
-                    series_uid = roi.get("seriesInstanceUid")
-                    sop_uid = roi.get("sopInstanceUid")
+                    study_uid = roi.get("studyInstanceUid", roi.get("StudyInstanceUID"))
+                    series_uid = roi.get("seriesInstanceUid", roi.get("SeriesInstanceUID"))
+                    sop_uid = roi.get("sopInstanceUid", roi.get("SOPInstanceUID"))
                     
                     # With these three, we will locate the exact dicom file that the 
                     # session level ROI is referring to
@@ -422,23 +422,23 @@ class ROICurator(curator.HierarchyCurator):
                         continue
                     
                     # populate the output_dictionary
-                    output_dict["Group"].append(group_label)
-                    output_dict["Project"].append(project_label)
-                    output_dict["Subject"].append(subject_label)
-                    output_dict["Session"].append(session_label)
-                    output_dict["Acquisition"].append(acquisition_label)
+                    output_dict["group"].append(group_label)
+                    output_dict["project"].append(project_label)
+                    output_dict["subject"].append(subject_label)
+                    output_dict["session"].append(session_label)
+                    output_dict["acquisition"].append(acquisition_label)
                     
-                    output_dict["File"].append(file_name)
-                    output_dict["Dicom Member"].append(dicom_member)
-                    output_dict["File Type"].append(file_type)
+                    output_dict["file"].append(file_name)
+                    output_dict["dicom member"].append(dicom_member)
+                    output_dict["file type"].append(file_type)
                     
                     output_dict["location"].append(label)
                     output_dict["description"].append(description)
                     
-                    output_dict["X min"].append(x_start)
-                    output_dict["X max"].append(x_end)
-                    output_dict["Y min"].append(y_start)
-                    output_dict["Y max"].append(y_end)
+                    output_dict["x min"].append(x_start)
+                    output_dict["x max"].append(x_end)
+                    output_dict["y min"].append(y_start)
+                    output_dict["y max"].append(y_end)
                     
                     output_dict["area"].append(cached_stats.get('area', 0))
                     output_dict["count"].append(cached_stats.get('count', 0))
@@ -448,9 +448,9 @@ class ROICurator(curator.HierarchyCurator):
                     output_dict["stdDev"].append(cached_stats.get('stdDev', 0))
                     output_dict["variance"].append(cached_stats.get('variance', 0))
 
-                    output_dict["User Origin"].append(user_origin)
+                    output_dict["user origin"].append(user_origin)
 
-                    output_dict["ROI type"].append(roi_type)
+                    output_dict["roi type"].append(roi_type)
 
         return output_dict
 
@@ -543,7 +543,7 @@ class ROICurator(curator.HierarchyCurator):
         # I've seen two keys used for this, "roi" and "ohifViewer".  'roi' was probably
         # Just for testing since I rarely see it, but here we are.
         output_dict = {}
-        for OHIF_KEY in session_info:
+        if OHIF_KEY in session_info:
             log.debug(f"checking {OHIF_KEY} in {session_info.keys()}")
             # We're looking for the 'measurements' key.
             measurements = session_info.get(OHIF_KEY, {}).get("measurements", {})
@@ -628,16 +628,19 @@ class ROICurator(curator.HierarchyCurator):
         
         container_type = fw_object.container_type
         if container_type == "file":
+            log.debug('working on file')
             acq = fw_object.parent
             files = [fw_object]
             object_name = fw_object.name
             
         elif container_type == "acquisition":
+            log.debug('working on acquisition')
             files = fw_object.reload().files
             object_name = fw_object.label
     
         elif container_type == "session":
             # first extract all files from the session.
+            log.debug('working on session')
             files = []
             for acq in fw_object.acquisitions():
                 acq = acq.reload()
@@ -653,7 +656,7 @@ class ROICurator(curator.HierarchyCurator):
         
         # If we found more than one dicom matching study/series, something is probably wrong...duplicate upload?
         if len(files) > 1:
-            log.warning(f"more than 1 file found mathing:\nStudyUID: {study_uid}\nSeriesUID: {series_uid}")
+            log.warning(f"more than 1 file found matching:\nStudyUID: {study_uid}\nSeriesUID: {series_uid}")
         
         file = files[0]
         acq = file.parent
