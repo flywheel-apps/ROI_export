@@ -676,9 +676,22 @@ class ROICurator(curator.HierarchyCurator):
         # Do this one zip member by one in the chance that you will find the correct
         # file early on and you don't have to download everything:
         for zip_member in zip_info["members"]:
-            raw_dcm = DicomBytesIO(
-            acq.read_file_zip_member(file['name'], zip_member.path))
-            dcm = pydicom.dcmread(raw_dcm)
+
+            if zip_member.get('size', 0) == 0:
+                log.debug(f"skipping directory {zip_member.get('path')}")
+                continue
+
+            try:
+                raw_dcm = DicomBytesIO(
+                acq.read_file_zip_member(file['name'], zip_member.path))
+
+                dcm = pydicom.dcmread(raw_dcm, force=True)
+
+            except Exception as e:
+                log.info(f"Error Loading dicom member '{zip_member.get('path','NO PATH PRESENT')}'.  Skipping")
+                continue
+
+
             
             if dcm.SOPInstanceUID == sop_uid:
                 match = zip_member.path
