@@ -717,9 +717,9 @@ class ROICurator(curator.HierarchyCurator):
         file = files[0]
         if Path(file) == ".zip":
             acq = file.parent
-            match = match_zipped_dicom_member(acq, file, sop_uid)
+            match = self.match_zipped_dicom_member(acq, file, sop_uid)
         else:
-            match = match_unzipped_dicom(file, sop_uid)
+            match = self.match_unzipped_dicom(file, sop_uid)
 
         if match is None:
             log.warning(
