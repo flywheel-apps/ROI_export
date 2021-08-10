@@ -609,6 +609,7 @@ class ROICurator(curator.HierarchyCurator):
         return output_dict
 
     def match_zipped_dicom_member(self, acq, file, sop_uid):
+        log.info('zipfile detected')
 
         zip_info = acq.get_file_zip_info(file['name'])
 
@@ -647,6 +648,7 @@ class ROICurator(curator.HierarchyCurator):
         return None
 
     def match_unzipped_dicom(self, file, sop_uid):
+        log.info('uncompressed file detected')
 
         try:
             raw_dcm = DicomBytesIO(file.read())
@@ -715,7 +717,9 @@ class ROICurator(curator.HierarchyCurator):
             log.warning(f"more than 1 file found matching:\nStudyUID: {study_uid}\nSeriesUID: {series_uid}")
 
         file = files[0]
-        if Path(file) == ".zip":
+
+        # This will make adding extensions easy
+        if Path(file).suffix in [".zip"]:
             acq = file.parent
             match = self.match_zipped_dicom_member(acq, file, sop_uid)
         else:
