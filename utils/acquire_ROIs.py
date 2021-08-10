@@ -53,7 +53,8 @@ def acquire_rois(fw, project):
 
     for container in project_walker.walk():
         container_dict = curator.curate_container(container)
-        container_dict = copy.deepcopy(container_dict)
+
+        #container_dict = copy.deepcopy(container_dict)
         # Every container from this curator will return a dict, but if the keys are
         # empty, that means it didn't find any metadata matching OhifViewer Roi's on
         # that container.  so if it exists and it's not None and it's not empty, it's
