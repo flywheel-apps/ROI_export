@@ -196,7 +196,7 @@ class ROICurator(curator.HierarchyCurator):
         
         # If this ROI doesn't have this key, we have no way of linking it to a file
         # when operating at the session level.
-        file_id = roi.get("seriesInstanceUid")
+        file_id = roi.get("SeriesInstanceUID")
         if file_id is None:
             log.error("No seriesInstanceUid for ROI")
             return [None]*7
@@ -658,7 +658,7 @@ class ROICurator(curator.HierarchyCurator):
             return None
 
         if dcm.SOPInstanceUID == sop_uid:
-            return file
+            return file['name']
 
         return None
 
@@ -719,7 +719,7 @@ class ROICurator(curator.HierarchyCurator):
         file = files[0]
 
         # This will make adding extensions easy
-        if Path(file).suffix in [".zip"]:
+        if Path(file['name']).suffix in [".zip"]:
             acq = file.parent
             match = self.match_zipped_dicom_member(acq, file, sop_uid)
         else:
