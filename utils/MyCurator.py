@@ -613,13 +613,14 @@ class ROICurator(curator.HierarchyCurator):
         return output_dict
 
     def match_zipped_dicom_member(self, acq, file, sop_uid):
-        log.info('zipfile detected')
+        log.info('checking for zipped file')
 
         try:
             zip_info = acq.get_file_zip_info(file['name'])
         except flywheel.ApiException as e:
             log.info('File is not zipped, opening raw')
             raise NotZip
+        log.info('zipped file detected')
 
         # First pass - we will look for a simple string match in the zipped dicom:
         match = [p['path'] for p in zip_info['members'] if sop_uid in p['path']]
