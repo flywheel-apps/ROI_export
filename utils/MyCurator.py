@@ -52,6 +52,10 @@ OUTPUT_TEMPLATE = {
 
 log = logging.getLogger("export-ROI")
 
+class NotZip(Exception):
+    pass
+
+
 
 class ROICurator(curator.HierarchyCurator):
     def __init__(self, fw):
@@ -609,9 +613,14 @@ class ROICurator(curator.HierarchyCurator):
         return output_dict
 
     def match_zipped_dicom_member(self, acq, file, sop_uid):
-        log.info('zipfile detected')
+        log.info('checking for zipped file')
 
-        zip_info = acq.get_file_zip_info(file['name'])
+        try:
+            zip_info = acq.get_file_zip_info(file['name'])
+        except flywheel.ApiException as e:
+            log.info('File is not zipped, opening raw')
+            raise NotZip
+        log.info('zipped file detected')
 
         # First pass - we will look for a simple string match in the zipped dicom:
         match = [p['path'] for p in zip_info['members'] if sop_uid in p['path']]
@@ -719,10 +728,10 @@ class ROICurator(curator.HierarchyCurator):
         file = files[0]
 
         # This will make adding extensions easy
-        if Path(file['name']).suffix in [".zip"]:
-            acq = file.parent
+        acq = file.parent
+        try:
             match = self.match_zipped_dicom_member(acq, file, sop_uid)
-        else:
+        except NotZip:
             match = self.match_unzipped_dicom(file, sop_uid)
 
         if match is None:
