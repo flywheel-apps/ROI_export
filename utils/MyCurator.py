@@ -200,7 +200,7 @@ class ROICurator(curator.HierarchyCurator):
         
         # If this ROI doesn't have this key, we have no way of linking it to a file
         # when operating at the session level.
-        file_id = roi.get("SeriesInstanceUID")
+        file_id = roi.get("seriesInstanceUid", roi.get("SeriesInstanceUID"))
         if file_id is None:
             log.error("No seriesInstanceUid for ROI")
             return [None]*7
