@@ -279,10 +279,10 @@ class ROICurator(curator.HierarchyCurator):
             # Tool types aren't even formated the same as `SUPPORTED_ROIS` keys...
             # I could add these to the list but again, idk.
             if roi_type == "rectangleRoi" or roi_type == "ellipticalRoi":
-                
-                study_uid = roi.get("studyInstanceUid")
-                series_uid = roi.get("seriesInstanceUid")
-                sop_uid = roi.get("sopInstanceUid")
+
+                study_uid = roi.get("studyInstanceUid", roi.get("StudyInstanceUID"))
+                series_uid = roi.get("seriesInstanceUid", roi.get("SeriesInstanceUID"))
+                sop_uid = roi.get("sopInstanceUid", roi.get("SOPInstanceUID"))
                 
                
                 dicom_member = self.get_roi_dicom_file(file, study_uid, series_uid,
