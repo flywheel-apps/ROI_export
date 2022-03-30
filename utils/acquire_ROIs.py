@@ -46,7 +46,7 @@ def acquire_rois(fw, project):
 
     """
 
-    curator = ROICurator(fw)
+    curator = ROICurator(fw=fw)
     project_walker = MyWalker(project, depth_first=curator.depth_first)
 
     output_dict = {}
