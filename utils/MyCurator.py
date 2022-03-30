@@ -9,7 +9,7 @@ from pydicom.filebase import DicomBytesIO
 
 import flywheel
 
-from flywheel_gear_toolkit.utils import curator
+from flywheel_gear_toolkit.utils.curator import HierarchyCurator
 from flywheel_gear_toolkit.utils.datatypes import Container
 
 POSSIBLE_KEYS = ["ohifViewer", "roi"]
@@ -57,9 +57,13 @@ class NotZip(Exception):
 
 
 
-class ROICurator(curator.HierarchyCurator):
-    def __init__(self, fw):
-        super().__init__()
+class ROICurator(HierarchyCurator):
+    def __init__(self, fw, **kwargs):
+        super().__init__(**kwargs)
+        self.config.multi = False
+        self.config.depth_first = False
+        self.legacy = True
+        self.depth_first = self.config.depth_first
         self.fw = fw
 
     def curate_container(self, container: Container):
