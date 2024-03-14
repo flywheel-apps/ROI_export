@@ -14,16 +14,34 @@
       "image": "flywheel/export-rois:1.1.11"
     },
     "flywheel": {
-      "suite": "Metadata I/O"
+      "suite": "Export",
+      "classification": {
+        "species": [
+          "Phantom",
+          "Human",
+          "Animal"
+        ],
+        "organ": [
+          "Any"
+        ],
+        "therapeutic_area": [
+          "Any"
+        ],
+        "modality": [
+          "Any"
+        ],
+        "function": [
+          "Export"
+        ]
+      }
     }
   },
   "inputs": {
-
-    "key": {
-      "base": "api-key"
+    "api-key": {
+      "base": "api-key",
+      "read-only": false
     }
   },
-  
   "config": {
     "gear_log_level": {
       "description": "The level at which the gear will log.",
@@ -40,8 +58,6 @@
       "default": false
     }
   },
-  "environment": {
-
-  },
+  "environment": {},
   "command": "python3.7 /flywheel/v0/run.py"
 }
